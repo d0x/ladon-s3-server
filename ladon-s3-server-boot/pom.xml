@@ -25,6 +25,11 @@
     </properties>
 
     <dependencies>
+
+        <!--<dependency>-->
+            <!--<groupId>org.springframework.data</groupId>-->
+            <!--<artifactId>spring-data-mongodb</artifactId>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>de.mindconsulting</groupId>
             <artifactId>ladon-s3-server</artifactId>
@@ -32,7 +37,7 @@
         </dependency>
         <dependency>
             <groupId>de.mindconsulting</groupId>
-            <artifactId>ladon-s3-server-fs</artifactId>
+            <artifactId>ladon-s3-server-mongo</artifactId>
             <version>${s3-server.version}</version>
         </dependency>
 

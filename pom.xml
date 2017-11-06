@@ -11,10 +11,9 @@
     <name>s3-server-boot</name>
     <description>Ladon S3 implementation</description>
 
-
     <modules>
         <module>ladon-s3-server</module>
-        <module>ladon-s3-server-fs</module>
+        <!--<module>ladon-s3-server-fs</module>-->
         <module>ladon-s3-server-mongo</module>
         <module>ladon-s3-server-boot</module>
         <module>ladon-s3-server-osgi-starter</module>

@@ -5,7 +5,7 @@
 package de.mc.ladon.s3server.osgi;
 
 import de.mc.ladon.s3server.repository.api.S3Repository;
-import de.mc.ladon.s3server.repository.impl.FSRepository;
+import de.mc.ladon.s3server.repository.impl.MongoRepository;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
@@ -22,8 +22,7 @@ public class Activator implements BundleActivator {
 
         Dictionary<String, String> props = new Hashtable<>();
         String home = System.getProperty("user.home");
-        context.registerService(S3Repository.class, new FSRepository(home + "/.s3server"), props);
-
+//        context.registerService(S3Repository.class, new MongoRepository(home + "/.s3server", mongoTemplate), props);
     }
 
 

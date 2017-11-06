@@ -7,8 +7,9 @@ package de.mc.ladon.s3server.config;
 import de.mc.ladon.s3server.logging.LoggingRepository;
 import de.mc.ladon.s3server.logging.PerformanceLoggingFilter;
 import de.mc.ladon.s3server.repository.api.S3Repository;
-import de.mc.ladon.s3server.repository.impl.FSRepository;
+import de.mc.ladon.s3server.repository.impl.MongoRepository;
 import de.mc.ladon.s3server.servlet.S3Servlet;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -16,6 +17,8 @@ import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.boot.context.embedded.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 
 /**
  * Configuration of beans for the s3server
@@ -28,10 +31,16 @@ public class BeanConfig {
     @Value("${s3server.fsrepo.root}")
     String fsRepoRoot;
 
+    @Autowired
+    MongoTemplate mongoTemplate;
+
+    @Autowired
+    GridFsTemplate gridFsTemplate;
+
     @ConditionalOnMissingBean
     @Bean
     S3Repository s3Repository() {
-        return new FSRepository(fsRepoRoot);
+        return new MongoRepository(gridFsTemplate, mongoTemplate);
     }
 
     @Bean
@@ -52,7 +61,7 @@ public class BeanConfig {
     }
 
     @Bean
-    @ConditionalOnProperty(value = "s3server.loggingEnabled" , havingValue = "true")
+    @ConditionalOnProperty(value = "s3server.loggingEnabled", havingValue = "true")
     FilterRegistrationBean filterRegistrationBean() {
         FilterRegistrationBean filterBean = new FilterRegistrationBean();
         filterBean.setFilter(new PerformanceLoggingFilter());
