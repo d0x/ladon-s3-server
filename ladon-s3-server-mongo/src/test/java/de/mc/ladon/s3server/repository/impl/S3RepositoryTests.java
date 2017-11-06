@@ -11,9 +11,6 @@ import de.mc.ladon.s3server.exceptions.NoSuchBucketException;
 import de.mc.ladon.s3server.exceptions.NoSuchKeyException;
 import de.mc.ladon.s3server.repository.api.S3Repository;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import java.io.ByteArrayInputStream;
@@ -28,7 +25,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 
-//@RunWith(Parameterized.class)
 public class S3RepositoryTests {
 
     private final String exampleBucketName = "examplebucketname";
@@ -37,12 +33,8 @@ public class S3RepositoryTests {
 
     private S3UserImpl user = new S3UserImpl(null, null, null, null, null);
 
+    // TODO: Use Parameterized tests?
     protected S3Repository cut;
-
-    @Parameters
-    public static Object[] data() {
-        return new Object[] { "first test", "second test" };
-    }
 
 
     @Test
@@ -56,6 +48,19 @@ public class S3RepositoryTests {
         createBucket();
         List<S3Bucket> s3Buckets = cut.listAllBuckets(null);
         assertTrue(s3Buckets.size() == 1);
+    }
+
+    @Test(expected = NoSuchBucketException.class)
+    public void should_throw_error_on_get_bucket_which_doesnt_exists() throws Exception {
+        cut.getBucket(new DummyS3CallContext(user), exampleBucketName);
+    }
+
+    @Test
+    public void should_get_bucket() throws Exception {
+        createBucket();
+
+        cut.getBucket(null, exampleBucketName);
+        // no exception thrown
     }
 
     @Test

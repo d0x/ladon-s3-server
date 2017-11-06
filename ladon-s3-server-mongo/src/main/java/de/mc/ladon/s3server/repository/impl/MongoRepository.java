@@ -53,7 +53,7 @@ public class MongoRepository implements S3Repository {
     public List<S3Bucket> listAllBuckets(S3CallContext callContext) {
         return mongoTemplate.findAll(MongoBucket.class)
                 .stream()
-                .map(it -> (S3Bucket) it)
+                .map(MongoS3Bucket::new)
                 .collect(Collectors.toList());
     }
 
@@ -156,7 +156,9 @@ public class MongoRepository implements S3Repository {
 
     @Override
     public void getBucket(S3CallContext callContext, String bucketName) {
-
+        if (mongoTemplate.findOne(query(where("bucketName").is(bucketName)), MongoBucket.class) == null) {
+            throw new NoSuchBucketException(bucketName, callContext.getRequestId());
+        }
     }
 
     @Override

@@ -73,7 +73,6 @@ public class MongoRepositoryTest extends S3RepositoryTests {
         mongodExecutable.stop();
     }
 
-
     static class MongoConfig extends AbstractMongoConfiguration {
 
         private final String db;

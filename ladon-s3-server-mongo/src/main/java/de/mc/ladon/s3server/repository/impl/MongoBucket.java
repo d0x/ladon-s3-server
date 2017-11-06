@@ -1,14 +1,13 @@
 package de.mc.ladon.s3server.repository.impl;
 
 import de.mc.ladon.s3server.entities.api.MongoS3User;
-import de.mc.ladon.s3server.entities.api.S3Bucket;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
 
 @Document
-public class MongoBucket implements S3Bucket {
+public class MongoBucket {
 
     @Indexed(unique = true)
     private String bucketName;
@@ -24,12 +23,10 @@ public class MongoBucket implements S3Bucket {
         this.mongoS3User = mongoS3User;
     }
 
-    @Override
     public String getBucketName() {
         return this.bucketName;
     }
 
-    @Override
     public Date getCreationDate() {
         return this.creationDate;
     }
