@@ -2,6 +2,7 @@ package de.mc.ladon.s3server.entities.api;
 
 
 import com.mongodb.gridfs.GridFSFile;
+import de.mc.ladon.s3server.repository.impl.FileMetaData;
 
 import java.io.InputStream;
 import java.util.Date;
@@ -26,8 +27,7 @@ public class MongoS3Object implements S3Object {
 
     @Override
     public S3User getOwner() {
-        // TODO
-        return null;
+        return FileMetaData.STATIC_USER;
     }
 
     @Override
@@ -49,7 +49,7 @@ public class MongoS3Object implements S3Object {
 
     @Override
     public String getMimeType() {
-        return null;
+        return delegate.getContentType();
     }
 
     @Override
@@ -59,7 +59,7 @@ public class MongoS3Object implements S3Object {
 
     @Override
     public String getBucket() {
-        return null;
+        return (String) delegate.getMetaData().get("bucketName");
     }
 
     @Override

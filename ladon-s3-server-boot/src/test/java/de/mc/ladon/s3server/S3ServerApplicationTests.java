@@ -45,6 +45,12 @@ public class S3ServerApplicationTests {
     @Before
     public void setUp() {
         AmazonS3Client client = getClient();
+        for (Bucket bucket : client.listBuckets()) {
+            for (S3ObjectSummary s3ObjectSummary : client.listObjects(bucket.getName()).getObjectSummaries()) {
+                client.deleteObject("test", s3ObjectSummary.getKey());
+            }
+        }
+        client.deleteBucket("test");
         client.createBucket("test");
         if (client.listObjects("test").getObjectSummaries().size() == 0) {
             for (int i = 0; i < 50; i++) {
@@ -136,7 +142,7 @@ public class S3ServerApplicationTests {
         Bucket b = client.createBucket(UUID.randomUUID().toString());
         ObjectMetadata meta = new ObjectMetadata();
         client.putObject(b.getName(), "test.txt", new ByteArrayInputStream("test".getBytes()), meta);
-        client.copyObject(b.getName(),"test.txt", b.getName(),"test2.txt");
+        client.copyObject(b.getName(), "test.txt", b.getName(), "test2.txt");
 
     }
 

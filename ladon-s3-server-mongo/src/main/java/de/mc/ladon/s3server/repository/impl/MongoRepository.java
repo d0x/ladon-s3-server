@@ -5,11 +5,10 @@ import com.mongodb.gridfs.GridFSFile;
 import de.mc.ladon.s3server.entities.api.*;
 import de.mc.ladon.s3server.entities.impl.S3ListBucketResultImpl;
 import de.mc.ladon.s3server.entities.impl.S3ResponseHeaderImpl;
-import de.mc.ladon.s3server.exceptions.InternalErrorException;
-import de.mc.ladon.s3server.exceptions.InvalidDigestException;
-import de.mc.ladon.s3server.exceptions.NoSuchBucketException;
-import de.mc.ladon.s3server.exceptions.NoSuchKeyException;
+import de.mc.ladon.s3server.exceptions.*;
 import de.mc.ladon.s3server.repository.api.S3Repository;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
@@ -21,8 +20,10 @@ import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
@@ -31,7 +32,7 @@ import static org.springframework.data.mongodb.gridfs.GridFsCriteria.whereFilena
 
 public class MongoRepository implements S3Repository {
 
-    private static final boolean VALIDATION = false;
+    private static final boolean VALIDATION = true;
 
     private static Logger logger = LoggerFactory.getLogger(MongoRepository.class);
 
@@ -64,9 +65,14 @@ public class MongoRepository implements S3Repository {
 
     @Override
     public void deleteBucket(S3CallContext callContext, String bucketName) {
+
+        if (gridFsTemplate.findOne(query(whereBucketNameIs(bucketName))) != null) {
+            throw new BucketNotEmptyException(bucketName, callContext.getRequestId());
+        }
+
         // TODO check user
-        mongoTemplate.remove(query(where("bucketName").is(bucketName)));
-        gridFsTemplate.delete(query(where("bucketName").is(bucketName)));
+        mongoTemplate.remove(query(where("bucketName").is(bucketName)), MongoBucket.class);
+        gridFsTemplate.delete(query(whereBucketNameIs(bucketName)));
     }
 
     @Override
@@ -85,7 +91,14 @@ public class MongoRepository implements S3Repository {
                 }
 
                 Long contentLength = callContext.getHeader().getContentLength();
-                String contentMD5 = callContext.getHeader().getContentMD5();
+
+                String contentMD5;
+
+                if (callContext.getHeader().getContentMD5() != null) {
+                    contentMD5 = Hex.encodeHexString(Base64.decodeBase64(callContext.getHeader().getContentMD5()));
+                } else {
+                    contentMD5 = null;
+                }
 
                 if ((contentLength != null && storedFile.getLength() != contentLength) ||
                         (contentMD5 != null && !storedFile.getMD5().equals(contentMD5))
@@ -101,7 +114,47 @@ public class MongoRepository implements S3Repository {
 
     @Override
     public S3Object copyObject(S3CallContext callContext, String srcBucket, String srcObjectKey, String destBucket, String destObjectKey, boolean copyMetadata) {
-        return null;
+        // TODO: merge with createObject
+        GridFsResource resource = gridFsTemplate.getResource(toGridFsFileName(srcBucket, srcObjectKey));
+        if (resource == null) {
+            if (mongoTemplate.exists(query(where("bucketName").is(srcBucket)), MongoBucket.class)) {
+                throw new NoSuchKeyException(srcObjectKey, callContext.getRequestId());
+            } else {
+                throw new NoSuchBucketException(srcBucket, callContext.getRequestId());
+            }
+        }
+
+        try {
+            // TODO read header.
+            Map<String, String> header = Collections.emptyMap();
+
+            GridFSFile storedFile = gridFsTemplate.store(
+                    resource.getInputStream(),
+                    toGridFsFileName(destBucket, destObjectKey),
+                    resource.getContentType(),
+                    new FileMetaData(destBucket, callContext.getUser(), destObjectKey, header)
+            );
+
+            if (VALIDATION) {
+                if (storedFile == null) {
+                    throw new InternalErrorException(destObjectKey, callContext.getRequestId());
+                }
+
+                Long contentLength = callContext.getHeader().getContentLength();
+                String contentMD5 = callContext.getHeader().getContentMD5();
+
+//                if ((contentLength != null && storedFile.getLength() != contentLength) ||
+//                        (contentMD5 != null && !storedFile.getMD5().equals(contentMD5))
+//                        ) {
+//                    gridFsTemplate.delete(query(where("_id").is(storedFile.getId())));
+//                    throw new InvalidDigestException(destObjectKey, callContext.getRequestId());
+//                }
+            }
+            return new MongoS3Object(storedFile);
+        } catch (IOException e) {
+            throw new InternalErrorException(destObjectKey, callContext.getRequestId());
+        }
+
     }
 
     @Override

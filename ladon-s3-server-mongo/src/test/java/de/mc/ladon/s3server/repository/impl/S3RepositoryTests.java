@@ -76,6 +76,24 @@ public class S3RepositoryTests {
     }
 
     @Test
+    public void should_copy_file() throws Exception {
+        createBucket();
+        storeFile();
+
+        String destBucket = exampleBucketName + "copy";
+        String destObjectKey = exampleFile + "copy";
+
+        DummyS3CallContext callContext = new DummyS3CallContext(user);
+        cut.copyObject(callContext, exampleBucketName, exampleKey, destBucket, destObjectKey, true);
+
+        callContext = new DummyS3CallContext(user);
+        cut.getObject(callContext, destBucket, destObjectKey, false);
+        byte[] readFile = ByteStreams.toByteArray(callContext.getContent());
+
+        assertTrue(Arrays.equals(readFile, exampleFile));
+    }
+
+    @Test
     public void should_read_store_mime_type() throws Exception {
         createBucket();
         storeFile();
@@ -103,6 +121,27 @@ public class S3RepositoryTests {
         } catch (NoSuchKeyException e) {
             // pass
         }
+    }
+
+    @Test(expected = NoSuchBucketException.class)
+    public void should_delete_files_inside_bucket() throws Exception {
+        createBucket();
+        storeFile();
+
+        cut.deleteBucket(null, exampleBucketName);
+
+        DummyS3CallContext antwort = new DummyS3CallContext(user);
+        cut.getObject(antwort, exampleBucketName, exampleKey, false);
+    }
+
+    @Test
+    public void should_delete_bucket() throws Exception {
+        createBucket();
+        storeFile();
+
+        cut.deleteBucket(null, exampleBucketName);
+
+        assertTrue(cut.listAllBuckets(null).isEmpty());
     }
 
     @Test
