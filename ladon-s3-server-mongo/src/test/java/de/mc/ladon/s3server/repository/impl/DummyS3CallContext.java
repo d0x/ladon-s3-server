@@ -1,15 +1,18 @@
 package de.mc.ladon.s3server.repository.impl;
 
 import de.mc.ladon.s3server.entities.api.*;
+import de.mc.ladon.s3server.entities.impl.S3RequestParamsImpl;
+import org.mockito.Mockito;
 
 import java.io.InputStream;
 import java.util.UUID;
+
+import static org.mockito.Mockito.when;
 
 public class DummyS3CallContext implements S3CallContext {
 
     private S3User user;
     private S3RequestHeader header;
-    private S3RequestParams params;
     private S3RequestId requestId = () -> UUID.randomUUID().toString();
     private String method;
     private String uri;
@@ -41,7 +44,9 @@ public class DummyS3CallContext implements S3CallContext {
 
     @Override
     public S3RequestParams getParams() {
-        return params;
+        S3RequestParams s3RequestParams = Mockito.mock(S3RequestParams.class);
+        when(s3RequestParams.getMaxKeys()).thenReturn(1000);
+        return s3RequestParams;
     }
 
 //    public void setParams(S3RequestParams params) {

@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Query.query;
@@ -66,13 +67,12 @@ public class MongoRepository implements S3Repository {
     @Override
     public void deleteBucket(S3CallContext callContext, String bucketName) {
 
+        // TODO check user
         if (gridFsTemplate.findOne(query(whereBucketNameIs(bucketName))) != null) {
             throw new BucketNotEmptyException(bucketName, callContext.getRequestId());
         }
 
-        // TODO check user
         mongoTemplate.remove(query(where("bucketName").is(bucketName)), MongoBucket.class);
-        gridFsTemplate.delete(query(whereBucketNameIs(bucketName)));
     }
 
     @Override
@@ -140,9 +140,9 @@ public class MongoRepository implements S3Repository {
                     throw new InternalErrorException(destObjectKey, callContext.getRequestId());
                 }
 
-                Long contentLength = callContext.getHeader().getContentLength();
-                String contentMD5 = callContext.getHeader().getContentMD5();
-
+//                Long contentLength = callContext.getHeader().getContentLength();
+//                String contentMD5 = callContext.getHeader().getContentMD5();
+//
 //                if ((contentLength != null && storedFile.getLength() != contentLength) ||
 //                        (contentMD5 != null && !storedFile.getMD5().equals(contentMD5))
 //                        ) {
@@ -189,8 +189,11 @@ public class MongoRepository implements S3Repository {
     public S3ListBucketResult listBucket(S3CallContext s3CallContext, String bucketName) {
 
         List<GridFSDBFile> files = gridFsTemplate.find(query(whereBucketNameIs(bucketName)));
+        Integer maxKeys = s3CallContext.getParams().getMaxKeys();
+        Stream<GridFSDBFile> stream = files.stream();
 
-        List<S3Object> s3Files = files.stream()
+        List<S3Object> s3Files = stream
+                .limit(maxKeys)
                 .map(MongoS3Object::new)
                 .collect(Collectors.toList());
 
